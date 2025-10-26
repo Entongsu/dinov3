@@ -16,6 +16,7 @@ logger = logging.getLogger("dinov3")
 
 
 class DataAugmentationDINO(object):
+
     def __init__(
         self,
         global_crops_scale,
@@ -55,31 +56,36 @@ class DataAugmentationDINO(object):
         logger.info(f"global_crops_size: {global_crops_size}")
         logger.info(f"local_crops_size: {local_crops_size}")
         logger.info(f"gram_crops_size: {gram_teacher_crops_size}")
-        logger.info(f"gram_teacher_no_distortions: {gram_teacher_no_distortions}")
+        logger.info(
+            f"gram_teacher_no_distortions: {gram_teacher_no_distortions}")
         logger.info(f"teacher_no_color_jitter: {teacher_no_color_jitter}")
-        logger.info(f"local_crops_subset_of_global_crops: {local_crops_subset_of_global_crops}")
-        logger.info(f"patch_size if local_crops_subset_of_global_crops: {patch_size}")
+        logger.info(
+            f"local_crops_subset_of_global_crops: {local_crops_subset_of_global_crops}"
+        )
+        logger.info(
+            f"patch_size if local_crops_subset_of_global_crops: {patch_size}")
         logger.info(f"share_color_jitter: {share_color_jitter}")
         logger.info(f"horizontal flips: {horizontal_flips}")
         logger.info("###################################")
 
         # Global crops and gram teacher crops can have different sizes. We first take a crop of the maximum size
         # and then resize it to the desired size for global and gram teacher crops.
-        global_crop_max_size = max(global_crops_size, gram_teacher_crops_size if gram_teacher_crops_size else 0)
+        global_crop_max_size = max(
+            global_crops_size,
+            gram_teacher_crops_size if gram_teacher_crops_size else 0)
 
         # random resized crop and flip
-        self.geometric_augmentation_global = v2.Compose(
-            [
-                v2.RandomResizedCrop(
-                    global_crop_max_size,
-                    scale=global_crops_scale,
-                    interpolation=v2.InterpolationMode.BICUBIC,
-                ),
-                v2.RandomHorizontalFlip(p=0.5 if horizontal_flips else 0.0),
-            ]
-        )
+        self.geometric_augmentation_global = v2.Compose([
+            v2.RandomResizedCrop(
+                global_crop_max_size,
+                scale=global_crops_scale,
+                interpolation=v2.InterpolationMode.BICUBIC,
+            ),
+            v2.RandomHorizontalFlip(p=0.5 if horizontal_flips else 0.0),
+        ])
 
-        resize_global = nn.Identity()  # Resize transform applied to global crops after random crop
+        resize_global = nn.Identity(
+        )  # Resize transform applied to global crops after random crop
         self.resize_global_post_transf = (
             nn.Identity()
         )  # Resize transform applied to global crops after all other transforms
@@ -107,61 +113,62 @@ class DataAugmentationDINO(object):
                 interpolation=v2.InterpolationMode.BICUBIC,
             )
 
-        self.geometric_augmentation_local = v2.Compose(
-            [
-                v2.RandomResizedCrop(
-                    local_crops_size,
-                    scale=local_crops_scale,
-                    interpolation=v2.InterpolationMode.BICUBIC,
-                ),
-                v2.RandomHorizontalFlip(p=0.5 if horizontal_flips else 0.0),
-            ]
-        )
+        self.geometric_augmentation_local = v2.Compose([
+            v2.RandomResizedCrop(
+                local_crops_size,
+                scale=local_crops_scale,
+                interpolation=v2.InterpolationMode.BICUBIC,
+            ),
+            v2.RandomHorizontalFlip(p=0.5 if horizontal_flips else 0.0),
+        ])
 
         # color distortions / blurring
-        color_jittering = v2.Compose(
-            [
-                v2.RandomApply(
-                    [v2.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
-                    p=0.8,
-                ),
-                v2.RandomGrayscale(p=0.2),
-            ]
-        )
+        color_jittering = v2.Compose([
+            v2.RandomApply(
+                [
+                    v2.ColorJitter(
+                        brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)
+                ],
+                p=0.8,
+            ),
+            v2.RandomGrayscale(p=0.2),
+        ])
 
         global_transfo1_extra = GaussianBlur(p=1.0)
 
-        global_transfo2_extra = v2.Compose(
-            [
-                GaussianBlur(p=0.1),
-                v2.RandomSolarize(threshold=128, p=0.2),
-            ]
-        )
+        global_transfo2_extra = v2.Compose([
+            GaussianBlur(p=0.1),
+            v2.RandomSolarize(threshold=128, p=0.2),
+        ])
 
         local_transfo_extra = GaussianBlur(p=0.5)
 
         # normalization
-        self.normalize = v2.Compose(
-            [
-                v2.ToImage(),
-                v2.ToDtype(torch.float32, scale=True),
-                make_normalize_transform(mean=mean, std=std),
-            ]
-        )
+        self.normalize = v2.Compose([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            make_normalize_transform(mean=mean, std=std),
+        ])
 
         if self.share_color_jitter:
             self.color_jittering = color_jittering
-            self.global_transfo1 = v2.Compose([resize_global, global_transfo1_extra, self.normalize])
-            self.global_transfo2 = v2.Compose([resize_global, global_transfo2_extra, self.normalize])
-            self.local_transfo = v2.Compose([local_transfo_extra, self.normalize])
-        else:
             self.global_transfo1 = v2.Compose(
-                [resize_global, color_jittering, global_transfo1_extra, self.normalize]
-            )
+                [resize_global, global_transfo1_extra, self.normalize])
             self.global_transfo2 = v2.Compose(
-                [resize_global, color_jittering, global_transfo2_extra, self.normalize]
-            )
-            self.local_transfo = v2.Compose([color_jittering, local_transfo_extra, self.normalize])
+                [resize_global, global_transfo2_extra, self.normalize])
+            self.local_transfo = v2.Compose(
+                [local_transfo_extra, self.normalize])
+        else:
+            self.global_transfo1 = v2.Compose([
+                resize_global, color_jittering, global_transfo1_extra,
+                self.normalize
+            ])
+            self.global_transfo2 = v2.Compose([
+                resize_global, color_jittering, global_transfo2_extra,
+                self.normalize
+            ])
+            self.local_transfo = v2.Compose(
+                [color_jittering, local_transfo_extra, self.normalize])
 
     def __call__(self, image):
         output = {}
@@ -193,8 +200,10 @@ class DataAugmentationDINO(object):
         if self.gram_teacher_crops_size is not None:
             # crops for gram teacher:
             if self.gram_teacher_no_distortions:
-                gram_crop_1 = self.normalize(self.resize_gram_teacher(im1_base))
-                gram_crop_2 = self.normalize(self.resize_gram_teacher(im2_base))
+                gram_crop_1 = self.normalize(
+                    self.resize_gram_teacher(im1_base))
+                gram_crop_2 = self.normalize(
+                    self.resize_gram_teacher(im2_base))
             else:
                 gram_crop_1 = self.resize_gram_teacher(global_crop_1_transf)
                 gram_crop_2 = self.resize_gram_teacher(global_crop_2_transf)
@@ -202,8 +211,12 @@ class DataAugmentationDINO(object):
 
         # local crops:
         if self.local_crops_subset_of_global_crops:
-            _local_crops = [self.local_transfo(im1_base) for _ in range(self.local_crops_number // 2)] + [
-                self.local_transfo(im2_base) for _ in range(self.local_crops_number // 2)
+            _local_crops = [
+                self.local_transfo(im1_base)
+                for _ in range(self.local_crops_number // 2)
+            ] + [
+                self.local_transfo(im2_base)
+                for _ in range(self.local_crops_number // 2)
             ]
 
             local_crops = []
@@ -211,15 +224,17 @@ class DataAugmentationDINO(object):
             gs = self.global_crops_size
             ls = self.local_crops_size
             for img in _local_crops:
-                rx, ry = np.random.randint(0, (gs - ls) // self.patch_size, 2) * self.patch_size
-                local_crops.append(img[:, rx : rx + ls, ry : ry + ls])
+                rx, ry = np.random.randint(0, (gs - ls) // self.patch_size,
+                                           2) * self.patch_size
+                local_crops.append(img[:, rx:rx + ls, ry:ry + ls])
                 offsets.append((rx, ry))
 
             output["local_crops"] = local_crops
             output["offsets"] = offsets
         else:
             local_crops = [
-                self.local_transfo(self.geometric_augmentation_local(image)) for _ in range(self.local_crops_number)
+                self.local_transfo(self.geometric_augmentation_local(image))
+                for _ in range(self.local_crops_number)
             ]
             output["local_crops"] = local_crops
             output["offsets"] = ()

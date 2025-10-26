@@ -275,29 +275,6 @@ def visualize_dino_features(
         0, 2, 3, 1),
                                 axis=1) * 0.23 + 0.4
 
-    fig, axs = plt.subplots(2, 1)
-    axs[0].imshow(raw_images)
-    axs[0].set_title('Raw Images')
-
-    axs[1].imshow(norm_features)
-    axs[1].set_title('Normalized Features')
-
-    # axs[2].imshow(norm_features)
-    # axs[2].set_title('Normalized Features')
-    # axs[3].imshow(norm_features_foreground)
-    # axs[3].set_title('Foreground Features')
-
-    axs[0].axis('off')
-    axs[1].axis('off')
-    # axs[2].axis('off')
-    # axs[3].axis('off')
-
-    plt.tight_layout()
-    plt.show()
-    plt.close()
-
-    # Compute variance per PCA channel
-
     channel_variances = np.var(norm_features.reshape(-1,
                                                      norm_features.shape[-1]),
                                axis=0)
@@ -306,7 +283,7 @@ def visualize_dino_features(
     # Visualize the dominant PCA channel as a heatmap
     dominant_map = norm_features[..., dominant_channel]
 
-    fig, axs = plt.subplots(3, 1, figsize=(6, 10))
+    fig, axs = plt.subplots(1, 4, figsize=(6, 10))
 
     axs[0].imshow(raw_images)
     axs[0].set_title('Raw Images')
@@ -322,15 +299,13 @@ def visualize_dino_features(
     )
     axs[2].axis('off')
 
+    axs[3].imshow(np.abs(dominant_map), cmap='hot')
+    axs[3].set_title('Feature Magnitude (|Dominant PCA Channel|)')
+    axs[3].axis('off')
+
     plt.tight_layout()
     plt.show()
     plt.close()
-
-    plt.imshow(np.abs(dominant_map), cmap='hot')
-
-    plt.title('Feature Magnitude (|Dominant PCA Channel|)')
-    plt.axis('off')
-    plt.show()
 
 
 image = np.array(

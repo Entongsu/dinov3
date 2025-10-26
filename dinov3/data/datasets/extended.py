@@ -11,6 +11,7 @@ from .decoders import Decoder, ImageDataDecoder, TargetDecoder
 
 
 class ExtendedVisionDataset(VisionDataset):
+
     def __init__(
         self,
         image_decoder: Decoder = ImageDataDecoder,

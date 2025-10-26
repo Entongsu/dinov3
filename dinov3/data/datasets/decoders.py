@@ -10,11 +10,13 @@ from PIL import Image
 
 
 class Decoder:
+
     def decode(self) -> Any:
         raise NotImplementedError
 
 
 class ImageDataDecoder(Decoder):
+
     def __init__(self, image_data: bytes) -> None:
         self._image_data = image_data
 
@@ -24,6 +26,7 @@ class ImageDataDecoder(Decoder):
 
 
 class TargetDecoder(Decoder):
+
     def __init__(self, target: Any):
         self._target = target
 
@@ -32,6 +35,7 @@ class TargetDecoder(Decoder):
 
 
 class DenseTargetDecoder(Decoder):
+
     def __init__(self, image_data: bytes) -> None:
         self._image_data = image_data
 
