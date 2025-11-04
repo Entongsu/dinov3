@@ -9,9 +9,6 @@ from typing import Any, Callable, Optional, Tuple, Union
 import sys
 from PIL import Image
 from torchvision.datasets import VisionDataset
-import numpy as np
-
-sys.path.append('/home/ensu/Documents/weird/IsaacLab/submodule/dinov3')
 
 
 class _Split(Enum):

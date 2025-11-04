@@ -7,7 +7,9 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import sys
 
+sys.path.append(".")
 from dinov3.logging import setup_logging
 from dinov3.utils.cluster import (
     get_slurm_account,
@@ -56,13 +58,15 @@ def get_submitit_parser():
         metavar="SLURM_QOS",
         type=str,
         dest="slurm_qos",
-        help="slurm QoS to use for jobs in cluster environment, default: %(default)s",
+        help=
+        "slurm QoS to use for jobs in cluster environment, default: %(default)s",
     )
     parser.add_argument(
         "--slurm-array-parallelism",
         default=256,
         type=int,
-        help="Maximum number of jobs that will be executed in parallel, default: %(default)s",
+        help=
+        "Maximum number of jobs that will be executed in parallel, default: %(default)s",
     )
     parser.add_argument(
         "--slurm-nice",
@@ -80,7 +84,8 @@ def get_submitit_parser():
         "--comment",
         default="",
         type=str,
-        help="Comment to pass to scheduler, e.g. priority message, default: '%(default)s'",
+        help=
+        "Comment to pass to scheduler, e.g. priority message, default: '%(default)s'",
     )
     parser.add_argument(
         "--exclude",
@@ -97,7 +102,8 @@ def get_submitit_parser():
 
 
 def get_run_parser():
-    parser = argparse.ArgumentParser("Launcher arguments", parents=[get_submitit_parser()])
+    parser = argparse.ArgumentParser("Launcher arguments",
+                                     parents=[get_submitit_parser()])
     parser.add_argument(
         "module_path",
         type=str,
@@ -123,6 +129,7 @@ def get_shared_folder() -> Path:
 
 
 class CheckpointableSubmitter:
+
     def __init__(self, module_path, callable_name, args, output_dir):
         self.args = args
         self.callable_name = callable_name
@@ -137,22 +144,28 @@ class CheckpointableSubmitter:
     def checkpoint(self):
         import submitit
 
-        logger.info(f"Requeuing {self.callable_name} from {self.module_path} with {self.args}")
-        empty_class = type(self)(self.module_path, self.callable_name, self.args, self.output_dir)
+        logger.info(
+            f"Requeuing {self.callable_name} from {self.module_path} with {self.args}"
+        )
+        empty_class = type(self)(self.module_path, self.callable_name,
+                                 self.args, self.output_dir)
         return submitit.helpers.DelayedSubmission(empty_class)
 
     def _setup_args(self):
         import submitit
 
         job_env = submitit.JobEnvironment()
-        self.output_dir = str(self.output_dir).replace("%j", str(job_env.job_id))
+        self.output_dir = str(self.output_dir).replace("%j",
+                                                       str(job_env.job_id))
         if "--output-dir" not in self.args:
             self.args.insert(0, f"--output-dir={self.output_dir}")
 
         # Setup logging with exact same arguments as in fairvit/run/init.py
         # to use lru_cache memoization and avoid setting up the logger twice
         setup_logging(output=self.output_dir, level=logging.INFO)
-        logger.info(f"Process group: {job_env.num_tasks} tasks, rank: {job_env.global_rank}")
+        logger.info(
+            f"Process group: {job_env.num_tasks} tasks, rank: {job_env.global_rank}"
+        )
         logger.info(f"Module Path: {self.module_path}")
         logger.info(f"Callable Name: {self.callable_name}")
         logger.info(f'Args: {" ".join(self.args)}')
@@ -162,7 +175,8 @@ def submit_jobs(class_to_submit, output_dir, submitit_args, name="fairvit"):
     import submitit
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    executor = submitit.AutoExecutor(folder=output_dir, slurm_max_num_timeout=30)
+    executor = submitit.AutoExecutor(folder=output_dir,
+                                     slurm_max_num_timeout=30)
 
     kwargs = {}
     if submitit_args.comment:
@@ -200,7 +214,9 @@ def main():
     if args.output_dir is None:
         args.output_dir = get_shared_folder() / "%j"
 
-    class_to_submit = CheckpointableSubmitter(args.module_path, args.callable_name, script_args, args.output_dir)
+    class_to_submit = CheckpointableSubmitter(args.module_path,
+                                              args.callable_name, script_args,
+                                              args.output_dir)
     submit_jobs(class_to_submit, args.output_dir, args, name=name)
 
 

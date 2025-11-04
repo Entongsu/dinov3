@@ -32,6 +32,7 @@ def _make_sample_transform(
     image_transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
 ):
+
     def transform(sample):
         image, target = sample
         if image_transform is not None:
@@ -72,6 +73,12 @@ def _parse_dataset_str(dataset_str: str):
         class_ = NYU
         if "split" in kwargs:
             kwargs["split"] = NYU.Split[kwargs["split"]]
+    elif name == "IsaacDataset":
+        from dinov3.data.datasets.isaac_dataset import IsaacDataset
+        class_ = IsaacDataset
+        if "split" in kwargs:
+            from dinov3.data.datasets.isaac_dataset import _Split
+            kwargs["split"] = _Split[kwargs["split"]]
     else:
         raise ValueError(f'Unsupported dataset "{name}"')
 
@@ -100,7 +107,10 @@ def make_dataset(
     logger.info(f'using dataset: "{dataset_str}"')
 
     class_, kwargs = _parse_dataset_str(dataset_str)
-    dataset = class_(transform=transform, target_transform=target_transform, transforms=transforms, **kwargs)
+    dataset = class_(transform=transform,
+                     target_transform=target_transform,
+                     transforms=transforms,
+                     **kwargs)
 
     logger.info(f"# of dataset samples: {len(dataset):,d}")
 
@@ -136,7 +146,8 @@ def _make_sampler(
             seed=seed,
             advance=advance,
         )
-    elif type in (SamplerType.SHARDED_INFINITE, SamplerType.SHARDED_INFINITE_NEW):
+    elif type in (SamplerType.SHARDED_INFINITE,
+                  SamplerType.SHARDED_INFINITE_NEW):
         logger.info("sampler: sharded infinite")
         if size > 0:
             raise ValueError("sampler size > 0 is invalid")

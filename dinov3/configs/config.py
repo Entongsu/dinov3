@@ -45,12 +45,17 @@ def apply_scaling_rules_to_cfg(cfg):  # to fix
 
     if cfg.optim.scaling_rule == "linear_wrt_256":
         old_lr = cfg.optim.lr
-        cfg.optim.lr *= cfg.train.batch_size_per_gpu * distributed.get_world_size() / 256.0
-        logger.info(f"linear scaling learning rate; old: {old_lr}, new: {cfg.optim.lr}")
+        cfg.optim.lr *= cfg.train.batch_size_per_gpu * distributed.get_world_size(
+        ) / 256.0
+        logger.info(
+            f"linear scaling learning rate; old: {old_lr}, new: {cfg.optim.lr}"
+        )
     elif cfg.optim.scaling_rule == "sqrt_wrt_1024":
         old_lr = cfg.optim.lr
-        cfg.optim.lr *= 4 * math.sqrt(cfg.train.batch_size_per_gpu * distributed.get_world_size() / 1024.0)
-        logger.info(f"sqrt scaling learning rate; old: {old_lr}, new: {cfg.optim.lr}")
+        cfg.optim.lr *= 4 * math.sqrt(cfg.train.batch_size_per_gpu *
+                                      distributed.get_world_size() / 1024.0)
+        logger.info(
+            f"sqrt scaling learning rate; old: {old_lr}, new: {cfg.optim.lr}")
     return cfg
 
 
@@ -68,10 +73,13 @@ def get_default_config() -> DictConfig:
     return OmegaConf.load(p)
 
 
-def get_cfg_from_args(args: DinoV3SetupArgs, multidistillation=False, strict=True):
+def get_cfg_from_args(args: DinoV3SetupArgs,
+                      multidistillation=False,
+                      strict=True):
     overrides = [*args.opts]
     if args.output_dir is not None:
-        overrides.append(f"train.output_dir={os.path.realpath(args.output_dir)}")
+        overrides.append(
+            f"train.output_dir={os.path.realpath(args.output_dir)}")
 
     # Config file
     cfg = OmegaConf.load(args.config_file)
@@ -97,7 +105,8 @@ def setup_config(args: DinoV3SetupArgs, strict_cfg=True):
     # Create the cfg with OmegaConf
     cfg = get_cfg_from_args(args, strict=strict_cfg)
     # setup distributed, logging, and random seeds
-    logger.info("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
+    logger.info("\n".join("%s: %s" % (k, str(v))
+                          for k, v in sorted(dict(vars(args)).items())))
     # dump config before modifying so it can be reloaded
     if args.output_dir is not None:
         write_config(cfg, args.output_dir)
@@ -106,7 +115,8 @@ def setup_config(args: DinoV3SetupArgs, strict_cfg=True):
     return cfg
 
 
-def _enumerate_all_subgroup_ranks(all_subgroup_rank_spans: Sequence[Tuple[int, int]]):
+def _enumerate_all_subgroup_ranks(
+        all_subgroup_rank_spans: Sequence[Tuple[int, int]]):
     """Expands a specification of process subgroups from spans to enumerated ranks.
 
     Args:
@@ -115,7 +125,9 @@ def _enumerate_all_subgroup_ranks(all_subgroup_rank_spans: Sequence[Tuple[int, i
     """
     for first, last in all_subgroup_rank_spans:
         assert first <= last
-    return tuple(tuple(range(first, last + 1)) for first, last in all_subgroup_rank_spans)
+    return tuple(
+        tuple(range(first, last + 1))
+        for first, last in all_subgroup_rank_spans)
 
 
 def setup_multidistillation(args: DinoV3SetupArgs):
@@ -133,8 +145,8 @@ def setup_multidistillation(args: DinoV3SetupArgs):
 
     # build process subgroups
     all_subgroup_rank_spans = tuple(
-        (student.ranks_range[0], student.ranks_range[1] - 1) for student in base_cfg.multidistillation.students
-    )
+        (student.ranks_range[0], student.ranks_range[1] - 1)
+        for student in base_cfg.multidistillation.students)
     all_subgroup_ranks = _enumerate_all_subgroup_ranks(all_subgroup_rank_spans)
     distributed.new_subgroups(all_subgroup_ranks)
 
@@ -153,11 +165,14 @@ def setup_multidistillation(args: DinoV3SetupArgs):
 
     args.output_dir = os.path.join(base_output_dir, name)
     args.opts += [f"train.output_dir={args.output_dir}"]
-    args.opts += [f"train.batch_size_per_gpu={global_batch_size // total_n_gpus}"]
+    args.opts += [
+        f"train.batch_size_per_gpu={global_batch_size // total_n_gpus}"
+    ]
     args.config_file = os.path.abspath(config_path)
     default_cfg = get_default_config()
     cfg = OmegaConf.load(args.config_file)
-    cfg = OmegaConf.merge(default_cfg, cfg, base_cfg, OmegaConf.from_cli(args.opts))
+    cfg = OmegaConf.merge(default_cfg, cfg, base_cfg,
+                          OmegaConf.from_cli(args.opts))
 
     global logger
     setup_logging(output=args.output_dir, level=logging.INFO)

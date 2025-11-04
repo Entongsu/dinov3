@@ -19,7 +19,7 @@ distillation:  # teacher
   full_cfg_path: dinov3/configs/train/vitl_im1k_lin834.yaml
   checkpoint_path: ignore
 train:
-  dataset_path: ImageNet:split=TRAIN
+  dataset_path: IsaacDataset:split=TRAIN:root=/home/ensu/Documents/weird/IsaacLab/logs/trash/sort_image
   cache_dataset: false
   centering: "sinkhorn_knopp"
   compile: true

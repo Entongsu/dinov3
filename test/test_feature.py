@@ -6,6 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn.preprocessing import MinMaxScaler
+import sys
+
+sys.path.append("/home/ensu/Documents/weird/IsaacLab")
 from scripts.workflows.hand_manipulation.utils.diffusion.dataset.utils import ColorRandomizer, GaussianNoiseRandomizer
 import torch.nn as nn
 
@@ -308,6 +311,5 @@ def visualize_dino_features(
     plt.close()
 
 
-image = np.array(
-    Image.open('/home/ensu/Downloads/download.jpeg').convert('RGB'))
+image = np.array(Image.open('/home/ensu/Downloads/rgb.png').convert('RGB'))
 visualize_dino_features(image[None], batch_pca=False)

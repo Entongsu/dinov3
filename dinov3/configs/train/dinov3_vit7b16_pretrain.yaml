@@ -40,7 +40,7 @@ gram:
   compute_stats: false
 train:
   batch_size_per_gpu: 16
-  dataset_path: null
+  dataset_path: IsaacDataset::split=TRAIN
   saveckp_freq: 20
   seed: 0
   num_workers: 10
@@ -59,7 +59,7 @@ train:
   cell_augmentation_type: hpa
   sharded_eval_checkpoint: true
 student:
-  arch: vit_7b
+  arch: vit_small
   patch_size: 16
   drop_path_rate: 0.4
   layerscale: 1.0e-05
